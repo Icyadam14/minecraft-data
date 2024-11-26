@@ -2027,7 +2027,7 @@
    packet_craft_recipe_response:
       windowId: ContainerID
       recipeDisplayId: varint
-      data: void # TODO
+      recipeDisplay: SlotDisplay
    # MC: ClientboundPlayerAbilitiesPacket
    packet_abilities:
       flags: i8
@@ -2120,23 +2120,24 @@
          default: void
 
    # https://github.com/extremeheat/extracted_minecraft_data/blob/client1.21.2/client/net/minecraft/world/entity/Relative.java#L82
-   PositionUpdateRelatives: ["bitflags", {
-      "type": "u32",
-      "flags": ["x", "y", "z", "yaw", "pitch", "dx", "dy", "dz", "yawDelta"]
-   }]
-   # PositionUpdateRelatives: ["bitfield", [
-   #    # unused bits on top
-   #    { "name": "unused", "size": 23, "signed": false },
-   #    { "name": "yawDelta", "size": 1, "signed": false },
-   #    { "name": "dz", "size": 1, "signed": false },
-   #    { "name": "dy", "size": 1, "signed": false },
-   #    { "name": "dx", "size": 1, "signed": false },
-   #    { "name": "pitch", "size": 1, "signed": false },
-   #    { "name": "yaw", "size": 1, "signed": false },
-   #    { "name": "z", "size": 1, "signed": false },
-   #    { "name": "y", "size": 1, "signed": false },
-   #    { "name": "x", "size": 1, "signed": false },
-   # ]]
+   # PositionUpdateRelatives: ["bitflags", {
+   #    "type": "u32",
+   #    "flags": ["x", "y", "z", "yaw", "pitch", "dx", "dy", "dz", "yawDelta"]
+   # }]
+   PositionUpdateRelatives: ["bitfield", [
+      # unused bits on top
+      { "name": "unused", "size": 23, "signed": false },
+      { "name": "yawDelta", "size": 1, "signed": false },
+      { "name": "dz", "size": 1, "signed": false },
+      { "name": "dy", "size": 1, "signed": false },
+      { "name": "dx", "size": 1, "signed": false },
+      { "name": "pitch", "size": 1, "signed": false },
+      { "name": "yaw", "size": 1, "signed": false },
+      { "name": "z", "size": 1, "signed": false },
+      { "name": "y", "size": 1, "signed": false },
+      { "name": "x", "size": 1, "signed": false },
+   ]]
+
    # MC: ClientboundPlayerPositionPacket
    packet_position:
       teleportId: varint
@@ -2155,71 +2156,70 @@
       pitch: f32
 
    # MC: ClientboundRecipeBookAddPacket
-   # TODO
    packet_recipe_book_add:
       entries: []varint
-         # RecipeDisplayEntry
-         contents:
-            displayId: varint
-            display:
-               type: varint =>
-               - crafting_shapeless
-               - crafting_shaped
-               - furnace
-               - stonecutter
-               - smithing
-               data: type ?
-                  if crafting_shapeless:
-                     ingredients: SlotDisplay[]varint
-                     result: SlotDisplay
-                     craftingStation: SlotDisplay
-                  if crafting_shaped:
-                     width: varint
-                     height: varint
-                     ingredients: SlotDisplay[]varint
-                     result: SlotDisplay
-                     craftingStation: SlotDisplay
-                  if furnace:
-                     ingredient: SlotDisplay
-                     fuel: SlotDisplay
-                     result: SlotDisplay
-                     craftingStation: SlotDisplay
-                     duration: varint
-                     experience: f32
-                  if stonecutter:
-                     ingredient: SlotDisplay
-                     result: SlotDisplay
-                     craftingStation: SlotDisplay
-                  if smithing:
-                     template: SlotDisplay
-                     base: SlotDisplay
-                     addition: SlotDisplay
-                     result: SlotDisplay
-                     craftingStation: SlotDisplay
-            group?: varint
-            # This ID corresponds to the "recipe_book_category" registry
-            category: varint =>
-            - crafting_building_blocks
-            - crafting_redstone
-            - crafting_equipment
-            - crafting_misc
-            - furnace_food
-            - furnace_blocks
-            - furnace_misc
-            - blast_furnace_blocks
-            - blast_furnace_misc
-            - smoker_food
+         recipeId: varint
+         display:
+            type: varint =>
+            - crafting_shapeless
+            - crafting_shaped
+            - furnace
             - stonecutter
             - smithing
-            - campfire
-            craftingRequirements?: ["registryEntryHolderSet", {
+            data: type ?
+               if crafting_shapeless:
+                  ingredients: SlotDisplay[]varint
+                  result: SlotDisplay
+                  craftingStation: SlotDisplay
+               if crafting_shaped:
+                  width: varint
+                  height: varint
+                  ingredients: SlotDisplay[]varint
+                  result: SlotDisplay
+                  craftingStation: SlotDisplay
+               if furnace:
+                  ingredient: SlotDisplay
+                  fuel: SlotDisplay
+                  result: SlotDisplay
+                  craftingStation: SlotDisplay
+                  duration: varint
+                  experience: f32
+               if stonecutter:
+                  ingredient: SlotDisplay
+                  result: SlotDisplay
+                  craftingStation: SlotDisplay
+               if smithing:
+                  template: SlotDisplay
+                  base: SlotDisplay
+                  addition: SlotDisplay
+                  result: SlotDisplay
+                  craftingStation: SlotDisplay
+         groupId: varint
+         categoryId: varint =>
+         - crafting_building_blocks
+         - crafting_redstone
+         - crafting_equipment
+         - crafting_misc
+         - furnace_food
+         - furnace_blocks
+         - furnace_misc
+         - blast_furnace_blocks
+         - blast_furnace_misc
+         - smoker_food
+         - stonecutter
+         - smithing
+         - campfire
+         hasIngredients: bool
+         ingredientCount: hasIngredients ?
+            if true: varint
+            default: void
+         ingredients: hasIngredients ?
+            if true: ["registryEntryHolderSet", {
                "base": { name: "name", type: "string" },
                "otherwise": { name: "ids", type: "varint" }
             }]
-         flags: ["bitflags", {
-            "type": "u8",
-            "flags": ["notification", "highlight"]
-         }]
+            default: void
+         flags: u8
       replace: bool
    # MC: ClientboundRecipeBookRemovePacket
    packet_recipe_book_remove:
@@ -2623,16 +2623,18 @@
       # ]]
       flags: u8
    # MC: ClientboundUpdateRecipesPacket
-   # TODO: update packet
    packet_declare_recipes:
-      recipes: []varint
-         name: string
+      propertySetCount: varint
+      propertySets: []varint
+         propertySetId: string
+         itemCount: varint
          items: varint[]varint
-      stoneCutterRecipes: []varint
-         input: ["registryEntryHolderSet", {
-                  "base": { name: "name", type: "string" },
-                  "otherwise": { name: "ids", type: "varint" }
-               }]
+      stonecutterRecipeCount: varint
+      stonecutterRecipes: []varint
+         ingredients: ["registryEntryHolderSet", {
+            "base": { name: "name", type: "string" },
+            "otherwise": { name: "ids", type: "varint" }
+         }]
          slotDisplay: SlotDisplay
 
    # MC: ClientboundUpdateTagsPacket
@@ -3076,11 +3078,13 @@
    # MC: ServerboundLockDifficultyPacket
    packet_lock_difficulty:
       locked: bool
+   # MC: 
+   MovementFlags: ["bitfield", [
+      { "name": "onGround", "size": 1, "signed": false },               # 0x01
+      { "name": "hasHorizontalCollision", "size": 1, "signed": false }, # 0x02
+      { "name": "unused", "size": 6, "signed": false }                  # Remaining bits
+   ]]
 
-   MovementFlags: ["bitflags", {
-      "type": "u8",
-      "flags": ["onGround", "hasHorizontalCollision"]
-   }]
    # MC: ServerboundMovePlayerPacket.Pos
    packet_position:
       x: f64
@@ -3141,11 +3145,16 @@
       jumpBoost: varint
    # MC: ServerboundPlayerInputPacket
    packet_steer_vehicle:
-      ## client/net/minecraft/world/entity/player/Input.java
-      inputs: ["bitflags", {
-         "type": "u8",
-         "flags": ["forward", "backward", "left", "right", "jump", "sneak", "sprint"]
-      }]
+      inputs: ["bitfield", [
+         { "name": "forward", "size": 1, "signed": false },
+         { "name": "backward", "size": 1, "signed": false },
+         { "name": "left", "size": 1, "signed": false },
+         { "name": "right", "size": 1, "signed": false },
+         { "name": "jump", "size": 1, "signed": false },
+         { "name": "shift", "size": 1, "signed": false },
+         { "name": "sprint", "size": 1, "signed": false },
+         { "name": "unused", "size": 1, "signed": false }
+      ]]
    # MC: ServerboundPongPacket
    packet_pong:
       id: i32
